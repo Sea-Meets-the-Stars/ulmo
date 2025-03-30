@@ -8,8 +8,8 @@ from setuptools import setup, find_packages
 setup_keywords = dict()
 setup_keywords['name'] = 'ulmo'
 setup_keywords['description'] = 'Outlier Detection for Sea-Surface Temperature Maps'
-setup_keywords['author'] = 'David M. Reiman et al.'
-setup_keywords['author_email'] = 'dreiman@ucsc.edu'
+setup_keywords['author'] = 'David M. Reiman, J. Xavier Prochaska et al.'
+setup_keywords['author_email'] = 'jxp@ucsc.edu'
 setup_keywords['license'] = 'BSD'
 setup_keywords['url'] = 'https://github.com/davidreiman/ulmo'
 setup_keywords['version'] = '0.0.dev0'
@@ -26,6 +26,7 @@ setup_keywords['install_requires'] = [
     'scikit-learn', 'scikit-image', 'tqdm', 'astropy', 'astropy-healpix',
     'healpy', 'cftime', 'bokeh', 'umap-learn', 'llvmlite', 'boto3',
     'xarray', 'h5netcdf', 
+    'setuptools-scm', 
     'importlib-metadata', 'timm==0.3.2']
 setup_keywords['zip_safe'] = False
 setup_keywords['use_2to3'] = False

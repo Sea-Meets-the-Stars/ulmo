@@ -3,9 +3,9 @@ import sys
 sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
-project = 'Nenya'
-copyright = '2025'
-author = 'J. Xavier Prochaska'
+project = 'Ulmo'
+copyright = '2019'
+author = 'David Reiman and J. Xavier Prochaska'
 
 # The full version, including alpha/beta/rc tags
 release = '0.1.0'

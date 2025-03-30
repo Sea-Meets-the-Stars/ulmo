@@ -56,7 +56,7 @@ clean:
 	rm -rf $(LOCALFILES)
 
 apirst:
-	SPHINX_APIDOC_OPTIONS=$(SPHINXAPIOPT) $(SPHINXAPI) --separate -o ./api ../nenya ../nenya/tests/* ../nenya/version.py 
+	SPHINX_APIDOC_OPTIONS=$(SPHINXAPIOPT) $(SPHINXAPI) --separate -o ./api ../ulmo ../ulmo/tests/* ../ulmo/version.py 
 #	python ./scripts/build_imgproc_defaults.py
 
 html:
@@ -124,8 +124,8 @@ devhelp:
 	@echo
 	@echo "Build finished."
 	@echo "To view the help file:"
-	@echo "# mkdir -p $$HOME/.local/share/devhelp/nenya"
-	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/nenya"
+	@echo "# mkdir -p $$HOME/.local/share/devhelp/ulmo"
+	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/ulmo"
 	@echo "# devhelp"
 
 epub:
