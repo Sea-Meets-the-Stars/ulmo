@@ -18,6 +18,8 @@ from ulmo import io as ulmo_io
 from ulmo.preproc import plotting as pp_plotting
 from ulmo.utils import catalog as cat_utils
 from ulmo.scripts import grab_llc
+from ulmo.scripts import enki_reconstruct
+from ulmo.mae import patch_analysis
 
 from IPython import embed
 
@@ -194,6 +196,77 @@ def llc_grab_missing():
     pargs = grab_llc.parser(['12','--var', 'Theta,U,V,W,Salt', '--istart', '46'])
     grab_llc.main(pargs)
 
+def dineof_prep_enki(p_sz:int=4):
+    # Read nc files
+    orig_file = os.path.join(os.getenv('OS_OGCM'), 'LLC', 'Enki', 'DINEOF',
+                             'Enki_LLC_orig.nc')
+    ds_orig = xarray.open_dataset(orig_file)
+    orig_imgs = np.asarray(ds_orig.variables['SST'])
+    # Reshape
+    orig_imgs = orig_imgs.reshape((orig_imgs.shape[0], 1, 
+                                   orig_imgs.shape[1],
+                                   orig_imgs.shape[2]))
+
+    for p in [10, 20, 30, 40, 50]:
+        # open files
+        #print(f'Working on: {dineof_file}')
+        #ds_recon = xarray.open_dataset(dineof_file)
+        mask_file = os.path.join(os.getenv('OS_OGCM'), 'LLC', 'Enki', 'Recon',
+            f'mae_mask_t75_p{p}.h5')
+        f_ma = h5py.File(mask_file, 'r')
+
+        dineof_file = os.path.join(os.getenv('OS_OGCM'), 'LLC', 'Enki', 'DINEOF',
+            f'Enki_LLC_DINEOF_p{p}.nc')
+        print(f'Working on: {dineof_file}')
+        preproc_file = dineof_file.replace('DINEOF_', 'DINEOF_pproc_')
+        preproc_file = preproc_file.replace('nc', 'h5')
+
+        # Extract
+        #recon_imgs = np.asarray(ds_recon.variables['sst_filled'])
+        mask_imgs = []
+        for i in range(180):
+            mask_img = f_ma['valid'][i,0,...]
+            patches = patch_analysis.find_patches(mask_img, p_sz=p_sz)
+            #
+            mask_patch_img = np.zeros((mask_img.shape[0]//p_sz, 
+                                       mask_img.shape[1]//p_sz))
+            for patch in patches:
+                i, j = np.unravel_index(patch, mask_img.shape)
+                mask_patch_img[i//p_sz, j//p_sz] = 1.
+
+            mask_imgs.append(mask_patch_img)
+        mask_imgs = np.asarray(mask_imgs)
+        
+        
+        # Write as hdf5
+        with h5py.File(preproc_file, 'w') as f:
+            # Validation
+            f.create_dataset('valid', data=orig_imgs.astype(np.float32))
+            # Metadata
+            #dset = f.create_dataset('valid_metadata', data=main_tbl.iloc[valid_idx].to_numpy(dtype=str).astype('S'))
+            #dset.attrs['columns'] = clms
+
+            # Masks
+            f.create_dataset('masks', data=mask_imgs.astype(np.float32))
+
+def dineof_enki_reconstruct(debug:bool=False):
+    # On Nautilus
+    #aws --endpoint https://s3-west.nrp-nautilus.io s3 cp s3://llc/mae/mae_pretrain_ddp_mask20/checkpoint-254.pth ./;
+    #cp ulmo/mae/correct_helpers.py /opt/conda/lib/python3.10/site-packages/timm/models/layers/helpers.py;
+    args = enki_reconstruct.get_args_parser()
+    for p in [10, 20, 30, 40, 50]:
+        largs = ['--data_path', f'Enki_LLC_DINEOF_pproc_p{p}.nc',
+                '--output_dir', 'output', 
+                '--resume', 'checkpoint-254.pth', 
+                '--upload_path', f's3://llc/mae/DINEOF/Enki_LLC_DINEOF_enki_p{p}.nc',
+                '--mask_upload_path', f's3://llc/mae/DINEOF/Enki_LLC_DINEOF_mask_p{p}.nc']
+        if not debug:
+            largs += ['--use_masks']
+        pargs = args.parse_args(largs)
+        enki_reconstruct.main(pargs)
+    
+    pass
+
 def main(flg):
     if flg== 'all':
         flg= np.sum(np.array([2 ** ii for ii in range(25)]))
@@ -220,6 +293,13 @@ def main(flg):
     if flg & (2**3):
         llc_grab_missing()
 
+    # Reconstruct with Enki
+    if flg & (2**4):
+        # Only run this once!
+        #dineof_prep_enki()
+
+        # Then this
+        dineof_enki_reconstruct()#debug=True)
 
 # Command line execution
 if __name__ == '__main__':
@@ -231,6 +311,7 @@ if __name__ == '__main__':
         #flg += 2 ** 1  # 2 -- Extract
         #flg += 2 ** 2  # 4 -- nc file
         #flg += 2 ** 3  # 8 -- Grab missing LLC file(s)
+        #flg += 2 ** 4  # 16 -- Reconstruct with Enki
     else:
         flg = sys.argv[1]
 
