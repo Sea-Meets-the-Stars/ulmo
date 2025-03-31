@@ -29,7 +29,7 @@ plt.show()
 
 data_xr_day_2 = xarray.open_dataset("/Volumes/Aqua-1/Hackathon/daily/l3s_fields/2019/010/20190110120000-STAR-L3S_GHRSST-SSTsubskin-LEO_Daily-ACSPO_V2.80-v02.0-fv01.0.nc")
 
-data_wo_time_day2['sea_surface_temperature'].plot.pcolormesh()
+#data_wo_time_day2['sea_surface_temperature'].plot.pcolormesh()
 plt.show()
 
 # This subsets the small area I selected, and combined the data sets (which I didn't end up using)
