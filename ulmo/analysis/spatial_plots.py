@@ -159,28 +159,37 @@ def show_avg_LL(main_tbl:pandas.DataFrame,
 
 
 
-def evals_to_healpix_meds(eval_tbl, nside,  mask=True):
+def evals_to_healpix_stat(eval_tbl, nside,  mask=True,
+                          metric:str='LL', stat:str='median'):
     """
-    Find out where the input cutouts are located and the median LL values associated
-    with each pixel
+    Find out where the input cutouts are located and the median values associated
+    with each pixel; default is LL
 
     Parameters
     ----------
-    mhw_sys : pandas.DataFrame
+    eval_tbl : pandas.DataFrame
     nside : int  # nside is a number that sets the resolution of map
     mask : bool, optional
+        If True, include a mask on the arrays
+    stat : str, optional
+        If 'median', return the median value of the metric in each pixel
+        If 'mean', return the average value of the metric in each pixel
+        else: barf
 
     Returns
     -------
-    num of events, lats, lons, median values : hp.ma, np.ndarray, np.ndarray, hp.ma
+    num of events, lats, lons, mean/median values : hp.ma, np.ndarray, np.ndarray, hp.ma
 
     """
+    if stat not in ['mean', 'median']:
+        raise IOError("Bad stat input")
+    
     # Grab lats, lons
     lats = eval_tbl.lat.values
     lons = eval_tbl.lon.values
 
-    # Grab LL values
-    vals = eval_tbl.LL.values
+    # Values
+    vals = eval_tbl[metric].values
 
     # Healpix coords
     theta = (90 - lats) * np.pi / 180.  # convert into radians
@@ -203,22 +212,19 @@ def evals_to_healpix_meds(eval_tbl, nside,  mask=True):
 # [~zero] selects pixels where the cutouts are (where events = 1 exist)
 
 
-    # Calculate median values
-    idx_arr = pandas.Series(idx_all).sort_values()
-    pixels = pandas.unique(idx_arr)
+    pixels = np.unique(idx_all)
 
     for pixel in pixels: 
     
-        # find where which cutouts to put in that pixel
-        where = np.where(pixel == idx_arr)
-        first = where[0][0]
-        last = where[0][-1]
-        indices = idx_arr[first:last + 1].index
+        # Grab em
+        good = pixel == idx_all
+        sub_vals = vals[good]
     
-        # evaluate the median LL value for that pixel 
-        vals = eval_tbl.iloc[indices.to_numpy()].LL.to_numpy()
-    
-        med_values[pixel] = np.median( vals )
+        if stat == 'median':
+            med_values[pixel] = np.median(sub_vals)
+        elif stat == 'mean':
+            med_values[pixel] = np.mean(sub_vals)
+        #med_values[pixel] = np.median( vals )
 
 
     # Mask
@@ -240,6 +246,7 @@ def show_med_LL(main_tbl:pandas.DataFrame,
                  nside=64, 
                  use_mask=True, tricontour=False,
                  lbl=None, figsize=(12,8), 
+                 metric='LL',
                  color='viridis', show=True):
     """Generate a global map of median LL of cutouts at that location 
     
@@ -253,12 +260,13 @@ def show_med_LL(main_tbl:pandas.DataFrame,
         figsize (tuple, optional): [description]. Defaults to (12,8).
         color (str, optional): [description]. Defaults to 'Reds'.
         show (bool, optional): If True, show on the screen.  Defaults to True
+        metric (str, optional): Metric to plot. Defaults to 'LL'.
     Returns:
         matplotlib.Axis: axis holding the plot
     """
     # Healpix me
-    hp_events, hp_lons, hp_lats, hp_values = evals_to_healpix_meds(
-        main_tbl, nside, mask=use_mask)
+    hp_events, hp_lons, hp_lats, hp_values = evals_to_healpix_stat(
+        main_tbl, nside, mask=use_mask, metric=metric)
     
     # Figure
     
